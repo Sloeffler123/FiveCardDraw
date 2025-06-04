@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
+using System.Linq;
 
 namespace SetUp
 {
@@ -14,8 +15,126 @@ namespace SetUp
         {
             WholeDeck = DeckSetUp();
         }
+        
+        public static void Rules()
+        {
+            Console.WriteLine("Welcome to Five Card Draw. Each player gets five cards. This is then followed by the first wave of betting. After everyone makes their bets players can swap up to three cards for new ones from the deck. This is then follwed by the final round of betting.");
+
+        }
+
+        public static void WinningHands(List<(int, string)> playerHand)
+        {
+
+            bool royalFlush = false;
+            bool straightFlush = false;
+            bool fourOfAKind = false;
+            bool fullHouse = false;
+            bool flush = false;
+            bool straight = false;
+            bool threeOfAKind = false;
+            bool twoPair = false;
+            bool onePair = false;
+            bool highCard = false;
+
+            List<bool> checkWinningHands = new()
+            {
+                royalFlush,
+                straightFlush,
+                fourOfAKind,
+                fullHouse,
+                flush,
+                straight,
+                threeOfAKind,
+                twoPair,
+                onePair,
+                highCard
+            };
+
+            int cardOne = playerHand[0].Item1;
+            int cardTwo = playerHand[1].Item1;
+            int cardThree = playerHand[2].Item1;
+            int cardFour = playerHand[3].Item1;
+            int cardFive = playerHand[4].Item1;
+
+            // split list into suit and integers
+            List<int> numbers = new();
+            foreach (var num in playerHand)
+            {
+                numbers.Add(num.Item1);
+            }
+            List<string> suits = new();
+            foreach (var suit in playerHand)
+            {
+                suits.Add(suit.Item2);
+            }
+
+            // check flush
+            if (suits.All(s => s == suits[0]))
+            {
+                flush = true;
+            }
+            // check all pairs
+            if (!fourOfAKind)
+            {// check pair
+                if (numbers.Count(n => n == 2) == 2)
+                {
+                    onePair = true;
+                }
+                // check three of a kind
+                if (numbers.Count(n => n == 3) == 3)
+                {
+                    threeOfAKind = true;
+                    onePair = false;
+                }
+                // check four of a kind
+                if (numbers.Count(n => n == 4) == 4)
+                {
+                    fourOfAKind = true;
+                    threeOfAKind = false;
+                }
+            }
+            // check two of kind and full house
+            if (!fullHouse)
+            {
+                // check full house
+                if (onePair && threeOfAKind)
+                {
+                    fullHouse = true;
+                }
+                // check two pair
+                if (onePair)
+                {
+                    
+                }
+            }
+            // check straights
+            if (!royalFlush)
+            {
+                // check royal flush
+                if (straight && flush && cardOne == 11)
+                {
+                    royalFlush = true;
+                }
+                // check straight flush
+                if (straight && flush)
+                {
+                    straightFlush = true;
+                }
+                // check straight
+                if (cardTwo == cardOne - 1 && cardThree == cardTwo - 1 && cardFour == cardThree - 1 && cardFive == cardFour - 1)
+                {
+                    straight = true;
+                }
+            }
+            
+
+                
+        }
+
         public static void Main()
         {
+            // display rules
+            Rules();
             //make players and get their cards
             var playerOne = Player.MakePlayer(WholeDeck, "Player1", 0);
             var playerTwo = Player.MakePlayer(WholeDeck, "Player2", 1);
@@ -30,12 +149,15 @@ namespace SetUp
                 playerFour,
 
             };
-            // 
+
+            // displays players hands
             foreach (var player in players)
             {
-                Console.WriteLine($"Player : {string.Join(" ", player.Hand)}, {player.TotalMoney}, {player.Name}, {player.BlindOrder}, {player.Fold}");
+                player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+                Player.DisplayPlayersCards(player.Hand);
             }
-            
+
+
         }
 
         // makes deck of 52 cards
@@ -43,7 +165,7 @@ namespace SetUp
         {
 
             List<(int, string)> suitsAndCards = new();
-            string[] suits = { "Spades", "Diamonds", "Clubs", "Hearts" };
+            string[] suits = { "♠", "♦", "♣", "♥" };
             foreach (var suit in suits)
             {
                 int count = 2;
@@ -72,34 +194,7 @@ namespace SetUp
         }
 
         // determine of card is face or not
-        public static void DisplayPlayersCards(List<(int, string)> playersHand)
-        {
-            List<string> playersDeck = new();
-            foreach (var card in playersHand)
-            {
-                if (card.Item1 == 11)
-                {
-                    playersDeck.Add($"Jack {card.Item2}");
-                }
-                else if (card.Item1 == 12)
-                {
-                    playersDeck.Add($"Queen {card.Item2}");
-                }
-                else if (card.Item1 == 13)
-                {
-                    playersDeck.Add($"King {card.Item2}");
-                }
-                else if (card.Item1 == 14)
-                {
-                    playersDeck.Add($"Ace {card.Item2}");
-                }
-                else
-                {
-                    playersDeck.Add(card.ToString());
-                }
-            }
-            Console.WriteLine(string.Join(" ", playersDeck));
-        }
+        
 
 
     }
@@ -137,6 +232,35 @@ namespace SetUp
             int playerBet = int.Parse(bet);
             player.TotalMoney -= playerBet;
             return playerBet;
+        }
+
+        public static void DisplayPlayersCards(List<(int, string)> playersHand)
+        {
+            List<string> playersDeck = new();
+            foreach (var card in playersHand)
+            {
+                if (card.Item1 == 11)
+                {
+                    playersDeck.Add($"(Jack, {card.Item2})");
+                }
+                else if (card.Item1 == 12)
+                {
+                    playersDeck.Add($"(Queen, {card.Item2})");
+                }
+                else if (card.Item1 == 13)
+                {
+                    playersDeck.Add($"(King, {card.Item2})");
+                }
+                else if (card.Item1 == 14)
+                {
+                    playersDeck.Add($"(Ace, {card.Item2})");
+                }
+                else
+                {
+                    playersDeck.Add(card.ToString());
+                }
+            }
+            Console.WriteLine(string.Join(" ", playersDeck));
         }
         // call this on second player through forth
         public static void CallRaiseFold(Player player, Transactions transaction, int playerBet)
@@ -179,7 +303,7 @@ namespace SetUp
 
             string input = Console.ReadLine().ToUpper();
             int userInput = int.Parse(input);
-            Deck.DisplayPlayersCards(player.Hand);
+            Player.DisplayPlayersCards(player.Hand);
             Console.WriteLine("Please input the order of the cards you want to swap from left to right(0-5).");
 
             for (int i = userInput; i < userInput; i++)
@@ -190,7 +314,7 @@ namespace SetUp
 
             }
             Console.WriteLine("New Deck");
-            Deck.DisplayPlayersCards(player.Hand);
+            Player.DisplayPlayersCards(player.Hand);
         }
 
         public static (int, string) GetCard()
@@ -199,6 +323,11 @@ namespace SetUp
             (int, string) newCard = Deck.WholeDeck[randomCard.Next(0, Deck.WholeDeck.Count)];
             Deck.WholeDeck.Remove(newCard);
             return newCard;
+        }
+
+        internal void GetPlayerCards()
+        {
+            throw new NotImplementedException();
         }
     }
 
