@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace SetUp
 {
@@ -22,7 +23,7 @@ namespace SetUp
 
         }
 
-        public static void WinningHands(List<(int, string)> playerHand)
+        public static int WinningHands(List<(int, string)> playerHand)
         {
 
             bool royalFlush = false;
@@ -84,13 +85,11 @@ namespace SetUp
                 if (numbers.Count(n => n == 3) == 3)
                 {
                     threeOfAKind = true;
-                    onePair = false;
                 }
                 // check four of a kind
                 if (numbers.Count(n => n == 4) == 4)
                 {
                     fourOfAKind = true;
-                    threeOfAKind = false;
                 }
             }
             // check two of kind and full house
@@ -102,9 +101,18 @@ namespace SetUp
                     fullHouse = true;
                 }
                 // check two pair
-                if (onePair)
+                int pairCount = 0;
+                foreach (var num in numbers)
                 {
-                    
+                    if (numbers.Count(n => n == 2) == 2)
+                    {
+                        pairCount += 1;
+                    }
+                }
+                if (pairCount == 4)
+                {
+                    twoPair = true;
+
                 }
             }
             // check straights
@@ -126,9 +134,15 @@ namespace SetUp
                     straight = true;
                 }
             }
-            
 
-                
+            foreach (var hand in checkWinningHands)
+            {
+                if (hand)
+                {
+                    return checkWinningHands.IndexOf(hand);
+                }
+            }
+            return checkWinningHands.IndexOf(highCard);
         }
 
         public static void Main()
@@ -149,21 +163,36 @@ namespace SetUp
                 playerFour,
 
             };
-
-            // displays players hands
-            foreach (var player in players)
+            // Main Loop
+            bool on = true;
+            while (on)
             {
-                player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-                Player.DisplayPlayersCards(player.Hand);
+                // displays players hands
+                int playerBet = 0;
+                Transactions.DisplayPotAndBlinds();
+                foreach (var player in players)
+                {
+                    // sort cards from least to best
+                    player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+                    Player.DisplayPlayersCards(player.Hand);
+                    // ask for bet
+                    if (player.BlindOrder == 0)
+                    {
+                        playerBet = Player.PlayerBet(player);
+                    }
+                    else if (player.BlindOrder == 1)
+                    {
+                        Player.CallRaiseFold(player, playerBet);
+                    }
+
+                }
             }
-
-
+            
         }
 
         // makes deck of 52 cards
         public static List<(int, string)> DeckSetUp()
         {
-
             List<(int, string)> suitsAndCards = new();
             string[] suits = { "♠", "♦", "♣", "♥" };
             foreach (var suit in suits)
@@ -176,7 +205,6 @@ namespace SetUp
                 }
             }
             return suitsAndCards;
-            
         }
 
         // gets players cards randomly
@@ -192,11 +220,6 @@ namespace SetUp
             }
             return playerCards;
         }
-
-        // determine of card is face or not
-        
-
-
     }
 
     public class Player
@@ -263,15 +286,16 @@ namespace SetUp
             Console.WriteLine(string.Join(" ", playersDeck));
         }
         // call this on second player through forth
-        public static void CallRaiseFold(Player player, Transactions transaction, int playerBet)
+        public static void CallRaiseFold(Player player, int playerBet)
         {
 
             Console.WriteLine($"{player.Name} what would you like to do? (C)all, (F)old, (R)aise");
+            Console.WriteLine($"Call")
             string userInput = Console.ReadLine().ToUpper();
             if (userInput == "C" | userInput == "CALL")
             {
                 player.TotalMoney -= playerBet;
-                transaction.pot += playerBet;
+                Transactions.pot += playerBet;
             }
             else if (userInput == "F" | userInput == "FOLD")
             {
@@ -282,7 +306,7 @@ namespace SetUp
                 var playerRaise = PlayerBet(player);
                 player.TotalMoney -= playerBet;
                 player.TotalMoney -= playerRaise;
-                transaction.pot += playerBet + playerRaise;
+                Transactions.pot += playerBet + playerRaise;
             }
         }
         // check if player has enough money to bet
@@ -333,10 +357,15 @@ namespace SetUp
 
     public class Transactions
     {
-        public int round = 0;
-        public int pot = 0;
-        public int bigBlind = 25;
-        public int smallBlind = 10;
+        public static int round = 0;
+        public static int pot = 0;
+        public static int bigBlind = 25;
+        public static int smallBlind = 10;
+
+        public static void DisplayPotAndBlinds()
+        {
+            Console.WriteLine($"Big Blind: {bigBlind} - Small Blind: {smallBlind} - Pot: {pot}");
+        } 
 
     }
 }
