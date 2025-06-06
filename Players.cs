@@ -47,7 +47,7 @@ namespace PlayerSetUp
                 onePair,
                 highCard
             };
-
+            playerHand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
             int cardOne = playerHand[0].Item1;
             int cardTwo = playerHand[1].Item1;
             int cardThree = playerHand[2].Item1;
@@ -155,6 +155,7 @@ namespace PlayerSetUp
                 player.BlindOrder += 1;
             }
         }
+
         public static List<(int, string)> GetPlayersCards(List<(int, string)> deck) // deck of cards from decksetup
         {
             Random random = new();
@@ -178,10 +179,14 @@ namespace PlayerSetUp
         // call this if its first player or if player raises
         public static int PlayerBet(Player player)
         {
+            Console.WriteLine();
+            Console.WriteLine($"Pot - {TransactionSetUp.Transactions.pot}");
+            Console.WriteLine();
             Console.WriteLine($"{player.Name} how much would you like to bet? ");
             string bet = Console.ReadLine();
             int playerBet = int.Parse(bet);
             player.TotalMoney -= playerBet;
+            TransactionSetUp.Transactions.pot += playerBet;
             return playerBet;
         }
 
@@ -211,20 +216,24 @@ namespace PlayerSetUp
                     playersDeck.Add(card.ToString());
                 }
             }
+            Console.WriteLine();
             Console.WriteLine(string.Join(" ", playersDeck));
         }
         // call this on second player through forth
         public static void CallRaiseFold(Player player, int playerBet)
         {
-
+            Console.WriteLine();
+            Console.WriteLine($"Pot - {TransactionSetUp.Transactions.pot}");
+            Console.WriteLine();
             Console.WriteLine($"{player.Name} what would you like to do? (C)all, (F)old, (R)aise");
-            Console.WriteLine($"Call - {Transactions.bigBlind + playerBet}");
+            Console.WriteLine();
+            Console.WriteLine($"Call - {TransactionSetUp.Transactions.bigBlind + playerBet}");
 
             string userInput = Console.ReadLine().ToUpper();
             if (userInput == "C" | userInput == "CALL")
             {
                 player.TotalMoney -= playerBet;
-                Transactions.pot += playerBet;
+                TransactionSetUp.Transactions.pot += playerBet;
             }
             else if (userInput == "F" | userInput == "FOLD")
             {
@@ -235,7 +244,7 @@ namespace PlayerSetUp
                 var playerRaise = PlayerBet(player);
                 player.TotalMoney -= playerBet;
                 player.TotalMoney -= playerRaise;
-                Transactions.pot += playerBet + playerRaise;
+                TransactionSetUp.Transactions.pot += playerBet;
             }
         }
         // check if player has enough money to bet
@@ -252,34 +261,44 @@ namespace PlayerSetUp
         // change cards
         public static void SwapCards(Player player)
         {
+            Console.WriteLine();
             Console.WriteLine($"{player.Name}: How many cards would you like to swap? (0-3)");
+            Player.DisplayPlayersCards(player.Hand);
 
             string input = Console.ReadLine().ToUpper();
             int userInput = int.Parse(input);
             Player.DisplayPlayersCards(player.Hand);
-            Console.WriteLine("Please input the order of the cards you want to swap from left to right(0-5).");
+            Console.WriteLine("Please input the order of the cards you want to swap from left to right(1-5).");
             if (userInput == 0)
             {
                 return;
             }
-            for (int i = userInput; i < 0; i++)
-                {
-                    string swap = Console.ReadLine();
-                    int swapPosition = int.Parse(swap);
-                    player.Hand[swapPosition] = GetCard();
+            for (int i = 0; i < userInput; i++)
+            {
+                string swap = Console.ReadLine();
+                int swapPosition = int.Parse(swap) - 1;
+                player.Hand[swapPosition] = GetCard();
 
-                }
+            }
             Console.WriteLine("New Deck");
+            player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
             Player.DisplayPlayersCards(player.Hand);
         }
 
         public static (int, string) GetCard()
         {
             Random randomCard = new();
-            (int, string) newCard = Deck.WholeDeck[randomCard.Next(0, Deck.WholeDeck.Count)];
-            Deck.WholeDeck.Remove(newCard);
+            (int, string) newCard = DeckFile.Deck.WholeDeck[randomCard.Next(0, DeckFile.Deck.WholeDeck.Count)];
+            DeckFile.Deck.WholeDeck.Remove(newCard);
             return newCard;
         }
 
+        public static void ShowBalances(List<Player> players)
+        {
+            foreach (var player in players)
+            {
+                Console.WriteLine($"{player.Name} - {player.TotalMoney}");
+            }
+        }
     }
 }  

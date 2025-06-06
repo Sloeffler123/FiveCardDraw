@@ -10,7 +10,13 @@ namespace TransactionSetUp
         public static void DisplayPotAndBlinds()
         {
             Console.WriteLine($"Big Blind: {bigBlind} - Small Blind: {smallBlind} - Pot: {pot}");
-        } 
+        }
+
+        public static void IncreaseBlinds()
+        {
+            bigBlind += 25;
+            smallBlind += 15;
+        }
 
     }
 }

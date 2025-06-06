@@ -7,7 +7,7 @@ namespace DeckFile
         public static void Reset()
         {
             WholeDeck.Clear();
-            WholeDeck = Deck.DeckSetUp();
+            WholeDeck = DeckFile.Deck.DeckSetUp();
         }
 
         // makes deck of 52 cards

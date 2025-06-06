@@ -14,7 +14,9 @@ namespace SetUp
         public static void Main()
         {
             // display rules
+            Console.WriteLine();
             Rules();
+            Console.WriteLine();
             var deck = DeckFile.Deck.WholeDeck;
             //make players and get their cards
             var playerOne = Player.MakePlayer(deck, "Player1", 0);
@@ -35,15 +37,16 @@ namespace SetUp
             while (on)
             {
                 // displays players hands
-
                 int playerBet = 0;
-                Transactions.round += 1;
-                Transactions.DisplayPotAndBlinds();
+                TransactionSetUp.Transactions.round += 1;
+                TransactionSetUp.Transactions.DisplayPotAndBlinds();
                 foreach (var player in players)
                 {
                     // sort cards from least to best
                     player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-                    Player.DisplayPlayersCards(player.Hand);
+                    Console.WriteLine();
+                    Console.WriteLine($"{player.Name}'s hand");
+                    PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
                     // ask for bet
                     if (player.Fold)
                     {
@@ -51,26 +54,26 @@ namespace SetUp
                     }
                     if (player.BlindOrder == 0)
                     {
-                        player.TotalMoney -= Transactions.bigBlind;
-                        playerBet = Player.PlayerBet(player);
+                        player.TotalMoney -= TransactionSetUp.Transactions.bigBlind;
+                        playerBet = PlayerSetUp.Player.PlayerBet(player);
                     }
                     else if (player.BlindOrder == 1)
                     {
-                        player.TotalMoney -= Transactions.bigBlind - Transactions.smallBlind;
-                        Player.CallRaiseFold(player, playerBet);
+                        player.TotalMoney -= TransactionSetUp.Transactions.bigBlind - TransactionSetUp.Transactions.smallBlind;
+                        PlayerSetUp.Player.CallRaiseFold(player, playerBet);
                     }
                     else
                     {
-                        Player.CallRaiseFold(player, playerBet);
+                        PlayerSetUp.Player.CallRaiseFold(player, playerBet);
                     }
                 }
-                if (Transactions.round != 2)
+                if (TransactionSetUp.Transactions.round != 2)
                 {
                     foreach (var player in players)
                     {
                         if (!player.Fold)
                         {
-                            Player.SwapCards(player);
+                            PlayerSetUp.Player.SwapCards(player);
                         }
                     }
                 }
@@ -82,7 +85,7 @@ namespace SetUp
                     {
                         if (!player.Fold)
                         {
-                            var hands = Player.WinningHands(player.Hand);
+                            var hands = PlayerSetUp.Player.WinningHands(player.Hand);
                             playerWinningHands.Add((hands, player));
                         }
                     }
@@ -93,14 +96,16 @@ namespace SetUp
                     Transactions.pot = 0;
                     foreach (var player in players)
                     {
-                        Player.DisplayPlayersCards(player.Hand);
-                        Player.ResetPlayerCards(player);
+                        PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
+                        PlayerSetUp.Player.ResetPlayerCards(player);
                     }
                     Deck.Reset();
+                    Console.WriteLine();
+                    Console.WriteLine("New Game");
+                    TransactionSetUp.Transactions.IncreaseBlinds();
+                    PlayerSetUp.Player.ShowBalances(players);
                 }
             }
         }
-    }
-        
+    } 
 }
-
