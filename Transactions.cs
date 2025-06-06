@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace TransactionSetUp
 {
     public class Transactions
@@ -6,6 +8,7 @@ namespace TransactionSetUp
         public static int pot = 0;
         public static int bigBlind = 25;
         public static int smallBlind = 10;
+        public static int amountToCall = 0;
 
         public static void DisplayPotAndBlinds()
         {
@@ -16,6 +19,16 @@ namespace TransactionSetUp
         {
             bigBlind += 25;
             smallBlind += 15;
+        }
+
+        public static void AddBlindsToPot()
+        {
+            pot += bigBlind + smallBlind;
+        }
+
+        public static bool CheckIfAmountSuffecient()
+        {
+
         }
 
     }

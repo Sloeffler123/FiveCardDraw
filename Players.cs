@@ -1,5 +1,6 @@
 using TransactionSetUp;
 using DeckFile;
+using System.Runtime.CompilerServices;
 namespace PlayerSetUp
 {
     public class Player
@@ -9,14 +10,16 @@ namespace PlayerSetUp
         public string Name;
         public int BlindOrder;
         public bool Fold;
+        public int PlayerAmountBetted;
 
-        public Player(List<(int, string)> hand, int totalMoney, string name, int blindOrder, bool fold)
+        public Player(List<(int, string)> hand, int totalMoney, string name, int blindOrder, bool fold, int playerAmountBetted)
         {
             Hand = hand;
             TotalMoney = totalMoney;
             Name = name;
             BlindOrder = blindOrder;
             Fold = fold;
+            PlayerAmountBetted = 0;
 
         }
 
@@ -176,7 +179,7 @@ namespace PlayerSetUp
             return newPlayer;
         }
 
-        // call this if its first player or if player raises
+        // call this if its first player
         public static int PlayerBet(Player player)
         {
             Console.WriteLine();
@@ -188,6 +191,17 @@ namespace PlayerSetUp
             player.TotalMoney -= playerBet;
             TransactionSetUp.Transactions.pot += playerBet;
             return playerBet;
+        }
+
+        public static void PlayerRaise(Player player)
+        {
+            Console.WriteLine("How much would you like to raise?");
+            Console.WriteLine();
+            string userInput = Console.ReadLine();
+            int playerRaise = int.Parse(userInput);
+            player.TotalMoney -= playerRaise + TransactionSetUp.Transactions.amountToCall;
+            TransactionSetUp.Transactions.pot += playerRaise + TransactionSetUp.Transactions.amountToCall;
+            
         }
 
         public static void DisplayPlayersCards(List<(int, string)> playersHand)
@@ -227,25 +241,53 @@ namespace PlayerSetUp
             Console.WriteLine();
             Console.WriteLine($"{player.Name} what would you like to do? (C)all, (F)old, (R)aise");
             Console.WriteLine();
-            Console.WriteLine($"Call - {TransactionSetUp.Transactions.bigBlind + playerBet}");
+            if (TransactionSetUp.Transactions.round == 1)
+            {
+                TransactionSetUp.Transactions.amountToCall = playerBet + TransactionSetUp.Transactions.bigBlind;
+                Console.WriteLine($"Call - {TransactionSetUp.Transactions.amountToCall}");
+                string userInput = Console.ReadLine().ToUpper();
+                if (userInput == "C" | userInput == "CALL")
+                {
+                    player.TotalMoney -= TransactionSetUp.Transactions.amountToCall;
+                    TransactionSetUp.Transactions.pot += TransactionSetUp.Transactions.amountToCall;
+                }
+                else if (userInput == "F" | userInput == "FOLD")
+                {
+                    player.Fold = true;
+                }
+                else if (userInput == "R" | userInput == "RAISE")
+                {
+                    var playerRaise = PlayerRaise(player);
+                    playerRaise += TransactionSetUp.Transactions.bigBlind + playerBet;
+                    player.TotalMoney -= playerRaise;
+                    TransactionSetUp.Transactions.pot += playerRaise;
+                }
 
-            string userInput = Console.ReadLine().ToUpper();
-            if (userInput == "C" | userInput == "CALL")
-            {
-                player.TotalMoney -= playerBet;
-                TransactionSetUp.Transactions.pot += playerBet;
             }
-            else if (userInput == "F" | userInput == "FOLD")
+            else
             {
-                player.Fold = true;
-            }
-            else if (userInput == "R" | userInput == "RAISE")
-            {
-                var playerRaise = PlayerBet(player);
-                player.TotalMoney -= playerBet;
-                player.TotalMoney -= playerRaise;
-                TransactionSetUp.Transactions.pot += playerBet;
-            }
+                TransactionSetUp.Transactions.amountToCall = playerBet;
+                Console.WriteLine($"Call - {playerBet}");
+                string userInput = Console.ReadLine().ToUpper();
+                if (userInput == "C" | userInput == "CALL")
+                {
+                    player.TotalMoney -= TransactionSetUp.Transactions.amountToCall;
+                    TransactionSetUp.Transactions.pot += TransactionSetUp.Transactions.amountToCall;
+                }
+                else if (userInput == "F" | userInput == "FOLD")
+                {
+                    player.Fold = true;
+                }
+                else if (userInput == "R" | userInput == "RAISE")
+                {
+                    var playerRaise = PlayerRaise(player);
+
+                    
+                }
+            } 
+
+            
+             
         }
         // check if player has enough money to bet
         public static bool CheckEnoughMoney(Player player, int playerBet)

@@ -34,12 +34,18 @@ namespace SetUp
             };
             // Main Loop
             bool on = true;
+            bool blindsTaken = false;
             while (on)
             {
                 // displays players hands
                 int playerBet = 0;
                 TransactionSetUp.Transactions.round += 1;
                 TransactionSetUp.Transactions.DisplayPotAndBlinds();
+                if (!blindsTaken)
+                {
+                    TransactionSetUp.Transactions.AddBlindsToPot();
+                    blindsTaken = true;
+                }
                 foreach (var player in players)
                 {
                     // sort cards from least to best
@@ -59,7 +65,7 @@ namespace SetUp
                     }
                     else if (player.BlindOrder == 1)
                     {
-                        player.TotalMoney -= TransactionSetUp.Transactions.bigBlind - TransactionSetUp.Transactions.smallBlind;
+                        player.TotalMoney -= TransactionSetUp.Transactions.smallBlind;
                         PlayerSetUp.Player.CallRaiseFold(player, playerBet);
                     }
                     else
@@ -100,6 +106,7 @@ namespace SetUp
                         PlayerSetUp.Player.ResetPlayerCards(player);
                     }
                     Deck.Reset();
+                    blindsTaken = false;
                     Console.WriteLine();
                     Console.WriteLine("New Game");
                     TransactionSetUp.Transactions.IncreaseBlinds();
