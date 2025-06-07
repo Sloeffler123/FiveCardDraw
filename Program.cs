@@ -34,43 +34,37 @@ namespace SetUp
             };
             // Main Loop
             bool on = true;
-            bool blindsTaken = false;
             while (on)
             {
                 // displays players hands
-                int playerBet = 0;
+                bool calledRaise = false;
                 TransactionSetUp.Transactions.round += 1;
                 TransactionSetUp.Transactions.DisplayPotAndBlinds();
-                if (!blindsTaken)
-                {
-                    TransactionSetUp.Transactions.AddBlindsToPot();
-                    blindsTaken = true;
-                }
                 foreach (var player in players)
                 {
-                    // sort cards from least to best
                     player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
                     Console.WriteLine();
                     Console.WriteLine($"{player.Name}'s hand");
                     PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
-                    // ask for bet
+
                     if (player.Fold)
                     {
-                        continue;
+                        break;
                     }
-                    if (player.BlindOrder == 0)
+                    if (player.BlindOrder == 0 && TransactionSetUp.Transactions.round == 1)
                     {
-                        player.TotalMoney -= TransactionSetUp.Transactions.bigBlind;
-                        playerBet = PlayerSetUp.Player.PlayerBet(player);
+                        player.PlayerAmountBetted = TransactionSetUp.Transactions.bigBlind;
+                        player.TotalMoney -= player.PlayerAmountBetted;
+                        PlayerSetUp.Player.PlayerBet(player);
                     }
-                    else if (player.BlindOrder == 1)
+                    else if (player.BlindOrder == 1 && TransactionSetUp.Transactions.round == 1)
                     {
-                        player.TotalMoney -= TransactionSetUp.Transactions.smallBlind;
-                        PlayerSetUp.Player.CallRaiseFold(player, playerBet);
+                        player.PlayerAmountBetted = TransactionSetUp.Transactions.smallBlind;
+                        PlayerSetUp.Player.CallRaiseFold(player);
                     }
                     else
                     {
-                        PlayerSetUp.Player.CallRaiseFold(player, playerBet);
+                        PlayerSetUp.Player.CallRaiseFold(player);
                     }
                 }
                 if (TransactionSetUp.Transactions.round != 2)
@@ -80,6 +74,7 @@ namespace SetUp
                         if (!player.Fold)
                         {
                             PlayerSetUp.Player.SwapCards(player);
+                            player.PlayerAmountBetted = 0;
                         }
                     }
                 }
@@ -97,16 +92,17 @@ namespace SetUp
                     }
                     // find the index of the highest int
                     playerWinningHands.Sort((a, b) => b.Item1.CompareTo(a.Item1));
-                    Console.WriteLine($"{playerWinningHands[0].Item2.Name} wins");
-                    playerWinningHands[0].Item2.TotalMoney += Transactions.pot;
-                    Transactions.pot = 0;
+                    Console.WriteLine($"{playerWinningHands[0].Item2.Name}wins");
+                    playerWinningHands[0].Item2.TotalMoney += TransactionSetUp.Transactions.pot;
                     foreach (var player in players)
                     {
                         PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
-                        PlayerSetUp.Player.ResetPlayerCards(player);
+                        PlayerSetUp.Player.ResetPlayerCardsAndIncreaseBlindOrder(player);
+                        player.PlayerAmountBetted = 0;
                     }
                     Deck.Reset();
-                    blindsTaken = false;
+                    players = PlayerSetUp.Player.FixTurnOrder(players);
+                    TransactionSetUp.Transactions.pot = 0;
                     Console.WriteLine();
                     Console.WriteLine("New Game");
                     TransactionSetUp.Transactions.IncreaseBlinds();

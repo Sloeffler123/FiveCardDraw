@@ -25,11 +25,8 @@ namespace TransactionSetUp
         {
             pot += bigBlind + smallBlind;
         }
-
-        public static bool CheckIfAmountSuffecient()
-        {
-
-        }
-
+        // public static bool CheckIfAmountSuffecient()
+        // {
+        // }
     }
 }
