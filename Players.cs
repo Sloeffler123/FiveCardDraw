@@ -11,6 +11,7 @@ namespace PlayerSetUp
         public int BlindOrder;
         public bool Fold;
         public int PlayerAmountBetted;
+        public bool PlayerRaised;
 
         public Player(List<(int, string)> hand, int totalMoney, string name, int blindOrder, bool fold, int playerAmountBetted)
         {
@@ -20,6 +21,7 @@ namespace PlayerSetUp
             BlindOrder = blindOrder;
             Fold = fold;
             PlayerAmountBetted = 0;
+            PlayerRaised = false;
 
         }
 
@@ -186,6 +188,9 @@ namespace PlayerSetUp
             if (TransactionSetUp.Transactions.round == 1)
             {
                 Console.WriteLine($"Pot - {TransactionSetUp.Transactions.bigBlind}");
+                Console.WriteLine();
+
+                Console.WriteLine($"{player.Name} how much would you like to bet? ");
             }
             else
             {
@@ -193,7 +198,7 @@ namespace PlayerSetUp
                 Console.WriteLine();
                 Console.WriteLine($"{player.Name} how much would you like to bet? ");
             }
-            
+
             string bet = Console.ReadLine();
             int playerBet = int.Parse(bet);
             player.TotalMoney -= playerBet;
@@ -207,10 +212,12 @@ namespace PlayerSetUp
             Console.WriteLine("How much would you like to raise?");
             Console.WriteLine();
             string userInput = Console.ReadLine();
-            int playerRaise = int.Parse(userInput) + TransactionSetUp.Transactions.amountToCall;
-            TransactionSetUp.Transactions.amountToCall = playerRaise;
-            player.PlayerAmountBetted += playerRaise;
-            TransactionSetUp.Transactions.pot += player.PlayerAmountBetted;
+            int playerRaise = int.Parse(userInput) + TransactionSetUp.Transactions.amountToCall - player.PlayerAmountBetted;
+            TransactionSetUp.Transactions.amountToCall = playerRaise + player.PlayerAmountBetted;
+            player.PlayerAmountBetted = TransactionSetUp.Transactions.amountToCall;
+            TransactionSetUp.Transactions.pot += playerRaise;
+            player.PlayerRaised = true;
+            
         }
 
         public static void DisplayPlayersCards(List<(int, string)> playersHand)
@@ -259,10 +266,12 @@ namespace PlayerSetUp
                 Console.WriteLine();
                 userInput = Console.ReadLine().ToUpper();
             }
+
             if (userInput == "C" | userInput == "CALL")
             {
                 player.TotalMoney -= TransactionSetUp.Transactions.amountToCall - player.PlayerAmountBetted;
                 TransactionSetUp.Transactions.pot += TransactionSetUp.Transactions.amountToCall - player.PlayerAmountBetted;
+                player.PlayerAmountBetted = TransactionSetUp.Transactions.amountToCall;
             }
             else if (userInput == "F" | userInput == "FOLD")
             {
@@ -358,6 +367,18 @@ namespace PlayerSetUp
                 }
             }
             return newPlayersList;
+        }
+
+        public static bool CheckRaise(List<Player> players)
+        {
+            foreach (var player in players)
+            {
+                if (player.PlayerRaised)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }  
