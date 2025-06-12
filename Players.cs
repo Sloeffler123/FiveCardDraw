@@ -11,7 +11,7 @@ namespace PlayerSetUp
         public int BlindOrder;
         public bool Fold;
         public int PlayerAmountBetted;
-        public bool PlayerRaised;
+
 
         public Player(List<(int, string)> hand, int totalMoney, string name, int blindOrder, bool fold, int playerAmountBetted)
         {
@@ -21,12 +21,14 @@ namespace PlayerSetUp
             BlindOrder = blindOrder;
             Fold = fold;
             PlayerAmountBetted = 0;
-            PlayerRaised = false;
+
 
         }
 
-        public static int WinningHands(List<(int, string)> playerHand)
+        public static (int, int) WinningHands(List<(int, string)> playerHand)
         {
+            int first = 0;
+            int second = 0;
 
             bool royalFlush = false;
             bool straightFlush = false;
@@ -39,19 +41,6 @@ namespace PlayerSetUp
             bool onePair = false;
             bool highCard = false;
 
-            List<bool> checkWinningHands = new()
-            {
-                royalFlush,
-                straightFlush,
-                fourOfAKind,
-                fullHouse,
-                flush,
-                straight,
-                threeOfAKind,
-                twoPair,
-                onePair,
-                highCard
-            };
             playerHand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
             int cardOne = playerHand[0].Item1;
             int cardTwo = playerHand[1].Item1;
@@ -76,50 +65,36 @@ namespace PlayerSetUp
             {
                 flush = true;
             }
-            // check all pairs
-            if (!fourOfAKind)
-            {// check pair
-                if (numbers.Count(n => n == 2) == 2)
-                {
-                    onePair = true;
-                }
-                // check three of a kind
-                if (numbers.Count(n => n == 3) == 3)
-                {
-                    threeOfAKind = true;
-                }
-                // check four of a kind
-                if (numbers.Count(n => n == 4) == 4)
-                {
-                    fourOfAKind = true;
-                }
-            }
-            // check two of kind and full house
-            if (!fullHouse)
-            {
-                // check full house
-                if (onePair && threeOfAKind)
-                {
-                    fullHouse = true;
-                }
-                // check two pair
-                int pairCount = 0;
-                foreach (var num in numbers)
-                {
-                    if (numbers.Count(n => n == 2) == 2)
-                    {
-                        pairCount += 1;
-                    }
-                }
-                if (pairCount == 4)
-                {
-                    twoPair = true;
+            var groups = numbers.GroupBy(n => n).Select(g => g.Count()).OrderByDescending(c => c).ToList();
 
-                }
+            if (groups[0] == 4)
+            {
+                fourOfAKind = true;
+            }
+            else if (groups[0] == 3 && groups.Count > 1 && groups[1] == 2)
+            {
+                fullHouse = true;
+            }
+            else if (groups[0] == 3)
+            {
+                threeOfAKind = true;
+            }
+            else if (groups.Count(g => g == 2) == 2)
+            {
+                twoPair = true;
+            }
+            else if (groups[0] == 2)
+            {
+                onePair = true;
             }
             // check straights
             if (!royalFlush)
             {
+                // check straight
+                if (cardTwo == cardOne + 1 && cardThree == cardTwo + 1 && cardFour == cardThree + 1 && cardFive == cardFour + 1)
+                {
+                    straight = true;
+                }
                 // check royal flush
                 if (straight && flush && cardOne == 11)
                 {
@@ -130,21 +105,44 @@ namespace PlayerSetUp
                 {
                     straightFlush = true;
                 }
-                // check straight
-                if (cardTwo == cardOne - 1 && cardThree == cardTwo - 1 && cardFour == cardThree - 1 && cardFive == cardFour - 1)
-                {
-                    straight = true;
-                }
             }
-
+            List<bool> checkWinningHands = new()
+            {
+                royalFlush,
+                straightFlush,
+                fourOfAKind,
+                fullHouse,
+                flush,
+                straight,
+                threeOfAKind,
+                twoPair,
+                onePair,
+                highCard
+            };
             foreach (var hand in checkWinningHands)
             {
                 if (hand)
                 {
-                    return checkWinningHands.IndexOf(hand);
+                    first = checkWinningHands.IndexOf(hand);
+                    foreach (var totalHand in playerHand)
+                    {
+                        second += totalHand.Item1;
+                    }
+
                 }
+                return (first, second);
             }
-            return checkWinningHands.IndexOf(highCard);
+            first = checkWinningHands.IndexOf(highCard);
+            foreach (var totalHand in playerHand)
+            {
+                double infinity = double.NegativeInfinity;
+                if (totalHand.Item1 > infinity)
+                {
+                    infinity = totalHand.Item1;
+                }
+                second = (int)infinity;
+            }
+            return (first, second);
         }
 
         public static void ResetPlayerCardsAndIncreaseBlindOrder(Player player)
@@ -173,7 +171,6 @@ namespace PlayerSetUp
             }
             return playerCards;
         }
-
         // takes the deck setup as the param
         public static Player MakePlayer(List<(int, string)> deck, string name, int turnOrder)
         {
@@ -184,12 +181,12 @@ namespace PlayerSetUp
         // call this if its first player
         public static void PlayerBet(Player player)
         {
+            bool holder = false;
             Console.WriteLine();
             if (TransactionSetUp.Transactions.round == 1)
             {
                 Console.WriteLine($"Pot - {TransactionSetUp.Transactions.bigBlind}");
                 Console.WriteLine();
-
                 Console.WriteLine($"{player.Name} how much would you like to bet? ");
             }
             else
@@ -198,13 +195,20 @@ namespace PlayerSetUp
                 Console.WriteLine();
                 Console.WriteLine($"{player.Name} how much would you like to bet? ");
             }
-
+            if (player.PlayerAmountBetted == 0)
+            {
+                holder = true;
+            }
             string bet = Console.ReadLine();
             int playerBet = int.Parse(bet);
             player.TotalMoney -= playerBet;
             player.PlayerAmountBetted += playerBet;
-            TransactionSetUp.Transactions.pot += player.PlayerAmountBetted;
             TransactionSetUp.Transactions.amountToCall = player.PlayerAmountBetted;
+            if (holder)
+            {
+                Transactions.pot += player.PlayerAmountBetted;
+                holder = false;
+            }
         }
 
         public static void PlayerRaise(Player player)
@@ -216,8 +220,7 @@ namespace PlayerSetUp
             TransactionSetUp.Transactions.amountToCall = playerRaise + player.PlayerAmountBetted;
             player.PlayerAmountBetted = TransactionSetUp.Transactions.amountToCall;
             TransactionSetUp.Transactions.pot += playerRaise;
-            player.PlayerRaised = true;
-            
+
         }
 
         public static void DisplayPlayersCards(List<(int, string)> playersHand)
@@ -266,6 +269,12 @@ namespace PlayerSetUp
                 Console.WriteLine();
                 userInput = Console.ReadLine().ToUpper();
             }
+            else if (player.BlindOrder == 0)
+            {
+                Console.WriteLine("How much would you like to bet?");
+                Console.WriteLine();
+                userInput = Console.ReadLine().ToUpper();
+            }
 
             if (userInput == "C" | userInput == "CALL")
             {
@@ -296,17 +305,16 @@ namespace PlayerSetUp
             }
             return true;
         }
-
         // change cards
         public static void SwapCards(Player player)
         {
             Console.WriteLine();
             Console.WriteLine($"{player.Name}: How many cards would you like to swap? (0-3)");
-            Player.DisplayPlayersCards(player.Hand);
+            DisplayPlayersCards(player.Hand);
 
             string input = Console.ReadLine().ToUpper();
             int userInput = int.Parse(input);
-            Player.DisplayPlayersCards(player.Hand);
+            DisplayPlayersCards(player.Hand);
             Console.WriteLine("Please input the order of the cards you want to swap from left to right(1-5).");
             if (userInput == 0)
             {
@@ -321,7 +329,7 @@ namespace PlayerSetUp
             }
             Console.WriteLine("New Deck");
             player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-            Player.DisplayPlayersCards(player.Hand);
+            DisplayPlayersCards(player.Hand);
         }
 
         public static (int, string) GetCard()
@@ -342,43 +350,33 @@ namespace PlayerSetUp
 
         public static List<Player> FixTurnOrder(List<Player> players)
         {
-            List<Player> newPlayersList = new();
-            foreach (var player in players)
-            {
-                if (player.BlindOrder == 0)
-                {
-                    newPlayersList.Add(player);
-                }
-                else if (player.BlindOrder == 1)
-                {
-                    newPlayersList.Add(player);
-                }
-                else if (player.BlindOrder == 2)
-                {
-                    newPlayersList.Add(player);
-                }
-                else if (player.BlindOrder == 3)
-                {
-                    newPlayersList.Add(player);
-                }
-                else if (player.BlindOrder == 4)
-                {
-                    newPlayersList.Add(player);
-                }
-            }
-            return newPlayersList;
+            return players.OrderBy(p => p.BlindOrder).ToList();
         }
 
-        public static bool CheckRaise(List<Player> players)
+        public static bool CheckIfAllPlayersCall(List<Player> players)
         {
+            bool isTrue = false;
             foreach (var player in players)
             {
-                if (player.PlayerRaised)
+
+                if (player.PlayerAmountBetted == Transactions.amountToCall || player.Fold)
                 {
-                    return true;
+                    isTrue = true;
+                }
+                else
+                {
+                    isTrue = false;
                 }
             }
-            return false;
+            return isTrue;
+        }
+
+        public static void CheckIfTie(List<(int, Player)> winningHands)
+        {
+            foreach (var hand in winningHands)
+            {
+                
+            }
         }
     }
 }  

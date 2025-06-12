@@ -15,49 +15,46 @@ namespace SetUp
         {
             // Main Loop
             // displays players hands
-            TransactionSetUp.Transactions.DisplayPotAndBlinds();
-            foreach (var player in players)
+            if (Transactions.round == 0)
             {
-                player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-                Console.WriteLine();
-                Console.WriteLine($"{player.Name}'s hand");
-                PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
-
-                if (player.Fold)
+                Transactions.DisplayPotAndBlinds();
+                Transactions.amountToCall = Transactions.bigBlind;
+            }
+            
+            while (true)
+            {
+                if (Transactions.round == 0)
+                {
+                    Transactions.AddBlindsToPot(players);
+                }
+                Transactions.round += 1;
+                foreach (var player in players)
+                {
+                    
+                    player.Hand.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+                    Console.WriteLine();
+                    Console.WriteLine($"{player.Name}'s hand");
+                    Player.DisplayPlayersCards(player.Hand);
+                    if (player.Fold)
+                    {
+                        continue;
+                    }
+                    if (player.PlayerAmountBetted < Transactions.amountToCall)
+                    {
+                        Player.CallRaiseFold(player);
+                    }
+                    else if (player.PlayerAmountBetted == Transactions.amountToCall)
+                    {
+                        Player.PlayerBet(player);
+                    }
+                    else if (player.BlindOrder == 0 && Transactions.round == 1)
+                    {
+                        Player.PlayerBet(player);
+                    }
+                }
+                if (Player.CheckIfAllPlayersCall(players))
                 {
                     break;
-                }
-                if (player.BlindOrder == 0 && TransactionSetUp.Transactions.round == 1)
-                {
-                    if (TransactionSetUp.Transactions.amountToCall > player.PlayerAmountBetted)
-                    {
-                        PlayerSetUp.Player.CallRaiseFold(player);
-                    }
-                    else
-                    {
-                        player.PlayerAmountBetted = TransactionSetUp.Transactions.bigBlind;
-                        player.TotalMoney -= player.PlayerAmountBetted;
-                        PlayerSetUp.Player.PlayerBet(player);
-                    }
-                }
-                else if (player.BlindOrder == 1 && TransactionSetUp.Transactions.round == 1)
-                {
-                    if (TransactionSetUp.Transactions.amountToCall > player.PlayerAmountBetted)
-                    {
-                        PlayerSetUp.Player.CallRaiseFold(player);
-                    }
-                    else
-                    {
-                        player.PlayerAmountBetted = TransactionSetUp.Transactions.smallBlind;
-                        PlayerSetUp.Player.CallRaiseFold(player);
-                    }
-                }
-                else
-                {
-                    if (TransactionSetUp.Transactions.amountToCall > player.PlayerAmountBetted)
-                    {
-                        PlayerSetUp.Player.CallRaiseFold(player);
-                    }
                 }
             }
         }
@@ -83,70 +80,63 @@ namespace SetUp
                 playerFour
             };
             bool on = true;
+            bool notSwapped = true;
             while (on)
             {
-                TransactionSetUp.Transactions.round += 1;
-                while (true)
+                MainPlayerLoop(players);
+                if (notSwapped)
                 {
-                    MainPlayerLoop(players);
-                    if (PlayerSetUp.Player.CheckRaise(players))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    PlayerSwapAndPlayerReset(players);
+                    notSwapped = false;
                 }
-                PlayerSwapAndPlayerReset(players);
-                
+                else
+                {
+                    CheckWhoWonAndReset(players);
+                }
+            }
+        }
+        public static void PlayerSwapAndPlayerReset(List<Player> players)
+        {
+            Transactions.amountToCall = 0;
+            foreach (var player in players)
+            {
+                if (!player.Fold)
+                {
+                    Player.SwapCards(player);
+                    player.PlayerAmountBetted = 0;
+                }
             }
 
         }
-
-        public static void PlayerSwapAndPlayerReset(List<Player> players)
+        public static void CheckWhoWonAndReset(List<Player> players)
         {
-            if (TransactionSetUp.Transactions.round != 2)
+            // check who won
+            List<((int,int), Player)> playerWinningHands = new();
+            foreach (var player in players)
             {
-                foreach (var player in players)
+                if (!player.Fold)
                 {
-                    if (!player.Fold)
-                    {
-                        PlayerSetUp.Player.SwapCards(player);
-                        player.PlayerAmountBetted = 0;
-                    }
+                    var hands = Player.WinningHands(player.Hand);
+                    playerWinningHands.Add((hands, player));
                 }
             }
-            else
+            // find the index of the highest int
+            playerWinningHands.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            Console.WriteLine($"{playerWinningHands[0].Item2.Name} wins!!!");
+            playerWinningHands[0].Item2.TotalMoney += Transactions.pot;
+            foreach (var player in players)
             {
-                // check who won
-                List<(int, Player)> playerWinningHands = new();
-                foreach (var player in players)
-                {
-                    if (!player.Fold)
-                    {
-                        var hands = PlayerSetUp.Player.WinningHands(player.Hand);
-                        playerWinningHands.Add((hands, player));
-                    }
-                }
-                // find the index of the highest int
-                playerWinningHands.Sort((a, b) => b.Item1.CompareTo(a.Item1));
-                Console.WriteLine($"{playerWinningHands[0].Item2.Name}wins");
-                playerWinningHands[0].Item2.TotalMoney += TransactionSetUp.Transactions.pot;
-                foreach (var player in players)
-                {
-                    PlayerSetUp.Player.DisplayPlayersCards(player.Hand);
-                    PlayerSetUp.Player.ResetPlayerCardsAndIncreaseBlindOrder(player);
-                    player.PlayerAmountBetted = 0;
-                }
-                Deck.Reset();
-                players = PlayerSetUp.Player.FixTurnOrder(players);
-                TransactionSetUp.Transactions.pot = 0;
-                Console.WriteLine();
-                Console.WriteLine("New Game");
-                TransactionSetUp.Transactions.IncreaseBlinds();
-                PlayerSetUp.Player.ShowBalances(players);
+                Player.DisplayPlayersCards(player.Hand);
+                Player.ResetPlayerCardsAndIncreaseBlindOrder(player);
+                player.PlayerAmountBetted = 0;
             }
+            Deck.Reset();
+            players = Player.FixTurnOrder(players);
+            Transactions.pot = 0;
+            Console.WriteLine();
+            Console.WriteLine("New Game");
+            Transactions.IncreaseBlinds();
+            Player.ShowBalances(players);
         }
     }
 }

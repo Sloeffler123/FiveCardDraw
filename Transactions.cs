@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using PlayerSetUp;
 
 namespace TransactionSetUp
 {
@@ -21,8 +22,21 @@ namespace TransactionSetUp
             smallBlind += 15;
         }
 
-        public static void AddBlindsToPot()
+        public static void AddBlindsToPot(List<Player> players)
         {
+            foreach (var player in players)
+            {
+                if (player.BlindOrder == 0)
+                {
+                    player.TotalMoney -= bigBlind;
+                    player.PlayerAmountBetted = bigBlind;
+                }
+                else if (player.BlindOrder == 1)
+                {
+                    player.TotalMoney -= smallBlind;
+                    player.PlayerAmountBetted = smallBlind;
+                }
+            }
             pot += bigBlind + smallBlind;
         }
         // public static bool CheckIfAmountSuffecient()
