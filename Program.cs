@@ -122,8 +122,9 @@ namespace SetUp
             }
             // find the index of the highest int
             playerWinningHands.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-            Console.WriteLine($"{playerWinningHands[0].Item2.Name} wins!!!");
-            playerWinningHands[0].Item2.TotalMoney += Transactions.pot;
+            var winner = Player.CheckForTie(playerWinningHands);
+            Console.WriteLine($"{winner.Name} wins!!!");
+            winner.TotalMoney += Transactions.pot;
             foreach (var player in players)
             {
                 Player.DisplayPlayersCards(player.Hand);

@@ -124,24 +124,12 @@ namespace PlayerSetUp
                 if (hand)
                 {
                     first = checkWinningHands.IndexOf(hand);
-                    foreach (var totalHand in playerHand)
-                    {
-                        second += totalHand.Item1;
-                    }
-
+                    second = numbers[numbers.Count - 1];
+                    return (first, second);
                 }
-                return (first, second);
             }
-            first = checkWinningHands.IndexOf(highCard);
-            foreach (var totalHand in playerHand)
-            {
-                double infinity = double.NegativeInfinity;
-                if (totalHand.Item1 > infinity)
-                {
-                    infinity = totalHand.Item1;
-                }
-                second = (int)infinity;
-            }
+            first = 10;
+            second = numbers[numbers.Count - 1];
             return (first, second);
         }
 
@@ -371,12 +359,30 @@ namespace PlayerSetUp
             return isTrue;
         }
 
-        public static void CheckIfTie(List<(int, Player)> winningHands)
+        public static Player CheckForTie(List<((int, int), Player)> playerHands)
         {
-            foreach (var hand in winningHands)
+            Player winner = null;
+            foreach (var hand in playerHands)
             {
-                
+                for (int i = 1; i < 6; i++)
+                {
+                    if (hand.Item1 == playerHands[i].Item1)
+                    {
+                        if (hand.Item1.Item2 < playerHands[i].Item1.Item2)
+                        {
+                            winner = playerHands[i].Item2;
+                            return winner;
+
+                        }
+                        else
+                        {
+                            winner = hand.Item2;
+                            return winner;
+                        }
+                    }
+                }
             }
+            return playerHands[0].Item2;
         }
     }
 }  
