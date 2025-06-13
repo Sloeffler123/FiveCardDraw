@@ -111,7 +111,7 @@ namespace SetUp
         public static void CheckWhoWonAndReset(List<Player> players)
         {
             // check who won
-            List<((int,int), Player)> playerWinningHands = new();
+            List<((int,int,int,int), Player)> playerWinningHands = new();
             foreach (var player in players)
             {
                 if (!player.Fold)
@@ -123,7 +123,7 @@ namespace SetUp
             // find the index of the highest int
             playerWinningHands.Sort((a, b) => a.Item1.CompareTo(b.Item1));
             var winner = Player.CheckForTie(playerWinningHands);
-            Console.WriteLine($"{winner.Name} wins!!!");
+            Console.WriteLine($"{winner.Name} wins!!! with a {string.Join(" ",winner.Hand)}");
             winner.TotalMoney += Transactions.pot;
             foreach (var player in players)
             {

@@ -1,6 +1,5 @@
 using TransactionSetUp;
-using DeckFile;
-using System.Runtime.CompilerServices;
+using System.Linq;
 namespace PlayerSetUp
 {
     public class Player
@@ -25,10 +24,12 @@ namespace PlayerSetUp
 
         }
 
-        public static (int, int) WinningHands(List<(int, string)> playerHand)
+        public static (int, int, int, int) WinningHands(List<(int, string)> playerHand)
         {
             int first = 0;
             int second = 0;
+            int third = 0;
+            int fourth = 0;
 
             bool royalFlush = false;
             bool straightFlush = false;
@@ -65,27 +66,49 @@ namespace PlayerSetUp
             {
                 flush = true;
             }
-            var groups = numbers.GroupBy(n => n).Select(g => g.Count()).OrderByDescending(c => c).ToList();
+            var groups = numbers
+            .GroupBy(n => n)
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Key)
+            .ToList();
 
-            if (groups[0] == 4)
+            var findHighest = groups; // Already sorted
+
+            if (groups[0].Count() == 4)
             {
                 fourOfAKind = true;
+                first = 2;
+                third = cardOne == cardTwo ? cardFive : cardOne;
+                second = findHighest[0].Key;
             }
-            else if (groups[0] == 3 && groups.Count > 1 && groups[1] == 2)
+            else if (groups[0].Count() == 3 && groups.Count > 1 && groups[1].Count() == 2)
             {
                 fullHouse = true;
+                first = 3;
+                second = findHighest[0].Key;
+                third = findHighest[1].Key;
             }
-            else if (groups[0] == 3)
+            else if (groups[0].Count() == 3)
             {
                 threeOfAKind = true;
+                first = 6;
+                second = findHighest[0].Key;
+                third = findHighest[1].Key;
             }
-            else if (groups.Count(g => g == 2) == 2)
+            else if (groups.Count(g => g.Count() == 2) == 2)
             {
                 twoPair = true;
+                first = 7;
+                second = findHighest[0].Key;
+                third = findHighest[1].Key;
+                fourth = findHighest[2].Key;
             }
-            else if (groups[0] == 2)
+            else if (groups[0].Count() == 2)
             {
                 onePair = true;
+                first = 9;
+                second = findHighest[0].Key;
+                third = findHighest[1].Key;
             }
             // check straights
             if (!royalFlush)
@@ -94,6 +117,8 @@ namespace PlayerSetUp
                 if (cardTwo == cardOne + 1 && cardThree == cardTwo + 1 && cardFour == cardThree + 1 && cardFive == cardFour + 1)
                 {
                     straight = true;
+                    first = 5;
+                    second = findHighest[0].Key;
                 }
                 // check royal flush
                 if (straight && flush && cardOne == 11)
@@ -104,6 +129,7 @@ namespace PlayerSetUp
                 if (straight && flush)
                 {
                     straightFlush = true;
+                    second = findHighest[0].Key;
                 }
             }
             List<bool> checkWinningHands = new()
@@ -123,14 +149,12 @@ namespace PlayerSetUp
             {
                 if (hand)
                 {
-                    first = checkWinningHands.IndexOf(hand);
-                    second = numbers[numbers.Count - 1];
-                    return (first, second);
+                    return (first, second, third, fourth);
                 }
             }
             first = 10;
             second = numbers[numbers.Count - 1];
-            return (first, second);
+            return (first, second, third, fourth);
         }
 
         public static void ResetPlayerCardsAndIncreaseBlindOrder(Player player)
@@ -162,10 +186,9 @@ namespace PlayerSetUp
         // takes the deck setup as the param
         public static Player MakePlayer(List<(int, string)> deck, string name, int turnOrder)
         {
-            Player newPlayer = new(Player.GetPlayersCards(deck), 1000, name, turnOrder, false, 0);
+            Player newPlayer = new(GetPlayersCards(deck), 1000, name, turnOrder, false, 0);
             return newPlayer;
         }
-
         // call this if its first player
         public static void PlayerBet(Player player)
         {
@@ -359,30 +382,70 @@ namespace PlayerSetUp
             return isTrue;
         }
 
-        public static Player CheckForTie(List<((int, int), Player)> playerHands)
+        public static Player CheckForTie(List<((int, int, int, int), Player)> playerHands)
         {
             Player winner = null;
+            int count = 0;
+            int temp = 0;
             foreach (var hand in playerHands)
             {
-                for (int i = 1; i < 6; i++)
+                for (int i = 0; i < 4; i++)
                 {
-                    if (hand.Item1 == playerHands[i].Item1)
+                    temp += 1;
+                    if (hand.Item2.Name == hand.Item2.Name && count == 0)
                     {
-                        if (hand.Item1.Item2 < playerHands[i].Item1.Item2)
+                        i = 1;
+                        count += 1;
+                    }
+                    if (hand.Item1.Item1 < playerHands[i].Item1.Item1)
+                    {
+                        winner = hand.Item2;
+                        return winner;
+                    }
+                    else if (hand.Item1.Item1 == playerHands[i].Item1.Item1)
+                    {
+                        if (hand.Item1.Item2 > playerHands[i].Item1.Item2)
                         {
-                            winner = playerHands[i].Item2;
-                            return winner;
-
+                            winner = hand.Item2;
+                        }
+                        else if (hand.Item1.Item2 == playerHands[i].Item1.Item2)
+                        {
+                            if (hand.Item1.Item3 > playerHands[i].Item1.Item3)
+                            {
+                                winner = hand.Item2;
+                            }
+                            else if (hand.Item1.Item3 == playerHands[i].Item1.Item3)
+                            {
+                                if (hand.Item1.Item4 > playerHands[i].Item1.Item4)
+                                {
+                                    winner = hand.Item2;
+                                }
+                                else
+                                {
+                                    winner = playerHands[i].Item2;
+                                }
+                            }
+                            else
+                            {
+                                winner = playerHands[i].Item2;
+                            }
                         }
                         else
                         {
-                            winner = hand.Item2;
-                            return winner;
+                            winner = playerHands[i].Item2;
                         }
                     }
+                    else
+                    {
+                        winner = playerHands[i].Item2;
+                    }
+                }
+                if (temp == 3)
+                {
+                    return winner;
                 }
             }
-            return playerHands[0].Item2;
+            return winner;
         }
     }
 }  
