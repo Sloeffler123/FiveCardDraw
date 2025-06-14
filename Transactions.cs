@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+
 using PlayerSetUp;
 
 namespace TransactionSetUp
@@ -39,6 +39,7 @@ namespace TransactionSetUp
             }
             pot += bigBlind + smallBlind;
         }
+       
         // public static bool CheckIfAmountSuffecient()
         // {
         // }
