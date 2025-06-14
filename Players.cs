@@ -423,21 +423,25 @@ namespace PlayerSetUp
                                 else
                                 {
                                     winner = playerHands[i].Item2;
+                                    break;
                                 }
                             }
                             else
                             {
                                 winner = playerHands[i].Item2;
+                                break;
                             }
                         }
                         else
                         {
                             winner = playerHands[i].Item2;
+                            break;
                         }
                     }
                     else
                     {
                         winner = playerHands[i].Item2;
+                        break;
                     }
                 }
                 if (temp == 3)
